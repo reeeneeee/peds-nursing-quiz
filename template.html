@@ -1,0 +1,84 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Peds Nursing Quiz</title><meta name="theme-color" content="#0f766e">
+<style>
+:root{--bg:#f6f7f5;--card:#fff;--ink:#1c2321;--mute:#5d6964;--acc:#0f766e;--acc2:#e6f2f0;--ok:#15803d;--okbg:#e8f6ec;--bad:#b42318;--badbg:#fdecea;--line:#dfe4e1}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.5 -apple-system,system-ui,Segoe UI,Roboto,sans-serif}
+main{max-width:640px;margin:auto;padding:18px 16px 40px}
+h1{font-size:26px;margin:6px 0 2px}.sub{color:var(--mute);margin:0 0 18px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:14px}
+.lbl{font-size:13px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--mute);margin:0 0 8px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{border:1.5px solid var(--line);background:#fff;border-radius:999px;padding:8px 13px;font-size:15px;cursor:pointer;color:var(--ink)}
+.chip[aria-pressed=true]{background:var(--acc);border-color:var(--acc);color:#fff}
+.btn{display:block;width:100%;border:0;border-radius:12px;padding:15px;font-size:17px;font-weight:700;background:var(--acc);color:#fff;cursor:pointer}
+.btn:disabled{opacity:.4}.btn.ghost{background:var(--acc2);color:var(--acc)}
+.count{color:var(--mute);font-size:14px;margin-top:8px;text-align:center}
+.bar{height:6px;background:var(--line);border-radius:9px;overflow:hidden;margin:4px 0 14px}.bar i{display:block;height:100%;background:var(--acc)}
+.meta{display:flex;justify-content:space-between;font-size:14px;color:var(--mute)}
+.tag{display:inline-block;font-size:12px;font-weight:700;padding:3px 8px;border-radius:6px;background:var(--acc2);color:var(--acc);margin-right:6px}
+.tag.sata{background:#fff4e0;color:#9a5b00}
+.q{font-size:18px;margin:10px 0 12px}
+.opt{display:flex;gap:10px;align-items:flex-start;width:100%;text-align:left;background:#fff;border:1.5px solid var(--line);border-radius:12px;padding:12px;margin:8px 0;font:inherit;color:inherit;cursor:pointer}
+.opt .k{flex:none;width:26px;height:26px;border:1.5px solid var(--mute);display:grid;place-items:center;font-size:13px;font-weight:700;border-radius:50%}
+.sata-q .opt .k{border-radius:6px}
+.opt.sel{border-color:var(--acc);background:var(--acc2)}.opt.sel .k{background:var(--acc);border-color:var(--acc);color:#fff}
+.opt.right{border-color:var(--ok);background:var(--okbg)}.opt.right .k{background:var(--ok);border-color:var(--ok);color:#fff}
+.opt.wrong{border-color:var(--bad);background:var(--badbg)}.opt.wrong .k{background:var(--bad);border-color:var(--bad);color:#fff}
+.opt.missed{border-style:dashed;border-color:var(--ok)}
+.fb{border-radius:12px;padding:12px 14px;margin:12px 0}.fb.ok{background:var(--okbg)}.fb.no{background:var(--badbg)}
+.fb b{display:block;margin-bottom:4px}.rat{font-size:15.5px;color:#2b3431}
+.score{font-size:56px;font-weight:800;color:var(--acc);text-align:center;margin:6px 0 0}
+.review{font-size:15px;border-top:1px solid var(--line);padding:10px 0}
+.small{font-size:13px;color:var(--mute);text-align:center;margin-top:18px}
+</style></head><body><main id="app"></main>
+<script>
+const BANK=__BANK__;
+const TOPICS=[...new Set(BANK.map(q=>q.t))];
+const LEVELS={1:"Exam level",2:"Harder",3:"Hardest"};
+let st={topics:new Set(TOPICS),levels:new Set([1,2]),n:20,qs:[],i:0,sel:new Set(),done:false,res:[]};
+const $=h=>{document.getElementById('app').innerHTML=h;scrollTo(0,0)};
+const esc=s=>s.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+function pool(){return BANK.filter(q=>st.topics.has(q.t)&&st.levels.has(q.l))}
+function home(){
+  const p=pool().length;
+  $(`<h1 data-ref="title">Peds Nursing Quiz</h1><p class="sub">NCLEX-style SATA & single-answer questions with rationales.</p>
+  <div class="card" data-ref="topic-picker"><p class="lbl">Topics</p><div class="chips">${TOPICS.map(t=>`<button class="chip" aria-pressed="${st.topics.has(t)}" onclick="tog('topics','${t}')">${t}</button>`).join('')}</div></div>
+  <div class="card" data-ref="level-picker"><p class="lbl">Difficulty</p><div class="chips">${[1,2,3].map(l=>`<button class="chip" aria-pressed="${st.levels.has(l)}" onclick="tog('levels',${l})">${LEVELS[l]}</button>`).join('')}</div></div>
+  <div class="card" data-ref="length-picker"><p class="lbl">How many questions</p><div class="chips">${[10,20,35,50].map(n=>`<button class="chip" aria-pressed="${st.n==n}" onclick="st.n=${n};home()">${n}</button>`).join('')}</div></div>
+  <button class="btn" data-ref="start-button" ${p?'':'disabled'} onclick="start()">Start quiz</button>
+  <p class="count">${p} questions available</p>
+  <p class="small">For study only — always follow your course materials and current clinical guidelines.</p>`)}
+function tog(k,v){st[k].has(v)?st[k].delete(v):st[k].add(v);home()}
+function start(){const p=pool().sort(()=>Math.random()-.5);st.qs=p.slice(0,Math.min(st.n,p.length));st.i=0;st.res=[];show()}
+function show(){
+  const q=st.qs[st.i];st.sel=new Set();st.done=false;
+  const pct=st.i/st.qs.length*100;
+  $(`<div class="meta"><span>Question ${st.i+1} of ${st.qs.length}</span><span>${st.res.filter(r=>r).length} correct</span></div>
+  <div class="bar"><i style="width:${pct}%"></i></div>
+  <div class="card ${q.s?'sata-q':''}" data-ref="question-card"><span class="tag ${q.s?'sata':''}">${q.s?'Select all that apply':'Single answer'}</span><span class="tag">${q.t}</span>
+  <p class="q">${esc(q.q)}</p><div id="opts">${q.o.map((o,j)=>`<button class="opt" data-j="${j}" onclick="pick(${j})"><span class="k">${String.fromCharCode(65+j)}</span><span>${esc(o)}</span></button>`).join('')}</div>
+  <div id="fb"></div></div>
+  <button class="btn" id="go" data-ref="submit-button" disabled onclick="go()">Check answer</button>
+  <p class="small"><a href="#" onclick="if(confirm('Quit this quiz?'))home();return false">Quit</a></p>`)}
+function pick(j){if(st.done)return;const q=st.qs[st.i];
+  if(q.s){st.sel.has(j)?st.sel.delete(j):st.sel.add(j)}else{st.sel=new Set([j])}
+  document.querySelectorAll('.opt').forEach(b=>b.classList.toggle('sel',st.sel.has(+b.dataset.j)));
+  document.getElementById('go').disabled=!st.sel.size}
+function go(){
+  const q=st.qs[st.i];
+  if(st.done){st.i++;return st.i<st.qs.length?show():end()}
+  st.done=true;const A=new Set(q.a);const ok=A.size==st.sel.size&&[...A].every(x=>st.sel.has(x));st.res.push(ok);
+  document.querySelectorAll('.opt').forEach(b=>{const j=+b.dataset.j;b.classList.remove('sel');
+    if(A.has(j)&&st.sel.has(j))b.classList.add('right');else if(st.sel.has(j))b.classList.add('wrong');else if(A.has(j))b.classList.add('missed','right')});
+  const letters=q.a.map(x=>String.fromCharCode(65+x)).join(', ');
+  document.getElementById('fb').innerHTML=`<div class="fb ${ok?'ok':'no'}" data-ref="feedback"><b>${ok?'Correct!':'Not quite — answer: '+letters}</b><div class="rat">${esc(q.r)}</div></div>`;
+  const g=document.getElementById('go');g.textContent=st.i+1<st.qs.length?'Next question →':'See my score';g.disabled=false}
+function end(){
+  const c=st.res.filter(r=>r).length,n=st.qs.length,p=Math.round(c/n*100);
+  const by={};st.qs.forEach((q,i)=>{by[q.t]=by[q.t]||[0,0];by[q.t][1]++;if(st.res[i])by[q.t][0]++});
+  $(`<h1>Your score</h1><div class="card" data-ref="score-card"><p class="score">${p}%</p><p class="sub" style="text-align:center">${c} of ${n} correct${p>=90?' — amazing 🎉':p>=75?' — solid work':' — keep going, you’re learning'}</p>
+  ${Object.entries(by).map(([t,[a,b]])=>`<div class="review">${t}: <b>${a}/${b}</b></div>`).join('')}</div>
+  <button class="btn" onclick="start()">New quiz, same settings</button><div style="height:10px"></div>
+  <button class="btn ghost" onclick="home()">Change topics</button>`)}
+home();
+</script></body></html>

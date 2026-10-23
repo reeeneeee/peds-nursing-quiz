@@ -1,0 +1,1 @@
+{"name": "Peds Nursing Quiz", "kind": "web", "runtime": "static html", "run_cmd": "python3 build_bank.py && python3 -c \"t=open('template.html').read();open('index.html','w').write(t.replace('__BANK__',open('bank.json').read()))\""}
